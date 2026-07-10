@@ -3,7 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { prisma } from "./lib/prisma.js";
 import { categoryRoutes } from "./modules/category/category.route.js";
-import { globalErrorHandler } from "./middlewares/globalErrorHandler.js";
+import { authRoutes } from "./modules/auth/auth.routes.js";
+import { globalErrorHandler } from "./middlewares/error.middleware.js";
 import { notFound } from "./middlewares/notFound.js";
 
 const app: Application = express();
@@ -43,6 +44,7 @@ app.get("/test-db", async (req: Request, res: Response) => {
 
 
 // API Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
 
 // Catch-all 404 handler
