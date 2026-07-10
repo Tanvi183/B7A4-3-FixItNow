@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { bookingController } from "./booking.controller.js";
-import { requireCustomer } from "../../middlewares/auth.middleware.js";
+import { requireCustomer, auth } from "../../middlewares/auth.middleware.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 import { createBookingSchema } from "./booking.validation.js";
 
@@ -13,5 +13,9 @@ router.post(
   validateRequest(createBookingSchema),
   bookingController.createBooking
 );
+
+// Protected endpoints: Any authenticated user can list/view their relevant bookings
+router.get("/", auth(), bookingController.getBookings);
+router.get("/:id", auth(), bookingController.getBookingById);
 
 export const bookingRoutes = router;
