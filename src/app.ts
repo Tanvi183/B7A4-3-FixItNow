@@ -6,6 +6,7 @@ import { categoryRoutes } from "./modules/category/category.route.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { userRoutes } from "./modules/user/user.routes.js";
 import { serviceRoutes } from "./modules/service/service.route.js";
+import { technicianRoutes } from "./modules/technician/technician.route.js";
 import { globalErrorHandler } from "./middlewares/error.middleware.js";
 import { notFound } from "./middlewares/notFound.js";
 
@@ -50,6 +51,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/services", serviceRoutes);
+app.use("/api/technicians", technicianRoutes);
 
 // Catch-all 404 handler
 app.use(notFound);
