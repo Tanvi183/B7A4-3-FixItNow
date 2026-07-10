@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { prisma } from "./lib/prisma.js";
+import { categoryRoutes } from "./modules/category/category.route.js";
 
 const app: Application = express();
 
@@ -36,5 +37,10 @@ app.get("/test-db", async (req: Request, res: Response) => {
     });
   }
 });
+
+
+
+// API Routes
+app.use("/api/categories", categoryRoutes);
 
 export default app;
