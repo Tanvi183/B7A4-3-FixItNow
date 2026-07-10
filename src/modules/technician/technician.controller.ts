@@ -25,7 +25,19 @@ const getTechnicianById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateProfile = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const result = await technicianService.updateProfileInDB(userId, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Technician profile updated successfully!",
+    data: result,
+  });
+});
+
 export const technicianController = {
   getTechnicians,
   getTechnicianById,
+  updateProfile,
 };

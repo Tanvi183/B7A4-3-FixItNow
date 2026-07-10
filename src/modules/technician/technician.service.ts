@@ -65,7 +65,16 @@ const getTechnicianByIdFromDB = async (id: string) => {
   return result;
 };
 
+const updateProfileInDB = async (userId: string, payload: any) => {
+  const result = await prisma.technicianProfile.update({
+    where: { userId },
+    data: payload,
+  });
+  return result;
+};
+
 export const technicianService = {
   getTechniciansFromDB,
   getTechnicianByIdFromDB,
+  updateProfileInDB,
 };
