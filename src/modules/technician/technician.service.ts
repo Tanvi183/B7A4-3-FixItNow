@@ -150,7 +150,7 @@ const updateBookingStatusInDB = async (
     COMPLETED: [],
   };
 
-  if (!validTransitions[booking.status].includes(status)) {
+  if (!(validTransitions[booking.status] || []).includes(status)) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       `Cannot change status from ${booking.status} to ${status}`

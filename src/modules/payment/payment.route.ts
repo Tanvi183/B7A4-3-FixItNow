@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { paymentController } from "./payment.controller.js";
-import { requireAuth } from "../../middlewares/auth.middleware.js";
+import { auth } from "../../middlewares/auth.middleware.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 import { createPaymentIntentSchema } from "./payment.validation.js";
 
@@ -8,12 +8,12 @@ const router = Router();
 
 router.post(
   "/create",
-  requireAuth,
+  auth(),
   validateRequest(createPaymentIntentSchema),
   paymentController.createPaymentIntent
 );
 
-router.get("/", requireAuth, paymentController.getPaymentHistory);
-router.get("/:id", requireAuth, paymentController.getPaymentDetails);
+router.get("/", auth(), paymentController.getPaymentHistory);
+router.get("/:id", auth(), paymentController.getPaymentDetails);
 
 export const paymentRoutes = router;

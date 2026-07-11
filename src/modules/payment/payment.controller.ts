@@ -31,7 +31,7 @@ const getPaymentHistory = catchAsync(async (req: Request, res: Response) => {
 
 const getPaymentDetails = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   const result = await paymentService.getPaymentDetailsFromDB(userId, id);
   sendResponse(res, {
     success: true,
