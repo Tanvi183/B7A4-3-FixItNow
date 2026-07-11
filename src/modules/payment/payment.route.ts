@@ -13,4 +13,7 @@ router.post(
   paymentController.createPaymentIntent
 );
 
+router.get("/", requireAuth, paymentController.getPaymentHistory);
+router.get("/:id", requireAuth, paymentController.getPaymentDetails);
+
 export const paymentRoutes = router;

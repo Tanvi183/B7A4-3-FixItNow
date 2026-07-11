@@ -9,6 +9,7 @@ import { serviceRoutes } from "./modules/service/service.route.js";
 import { technicianRoutes } from "./modules/technician/technician.route.js";
 import { bookingRoutes } from "./modules/booking/booking.route.js";
 import { paymentRoutes } from "./modules/payment/payment.route.js";
+import { reviewRoutes } from "./modules/review/review.route.js";
 import { globalErrorHandler } from "./middlewares/error.middleware.js";
 import { notFound } from "./middlewares/notFound.js";
 
@@ -56,6 +57,7 @@ app.use("/api/services", serviceRoutes);
 app.use("/api/technicians", technicianRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Catch-all 404 handler
 app.use(notFound);

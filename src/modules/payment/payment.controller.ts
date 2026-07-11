@@ -18,6 +18,31 @@ const createPaymentIntent = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getPaymentHistory = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const result = await paymentService.getPaymentHistoryFromDB(userId);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Payment history fetched successfully!",
+    data: result,
+  });
+});
+
+const getPaymentDetails = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const { id } = req.params;
+  const result = await paymentService.getPaymentDetailsFromDB(userId, id);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Payment details fetched successfully!",
+    data: result,
+  });
+});
+
 export const paymentController = {
   createPaymentIntent,
+  getPaymentHistory,
+  getPaymentDetails,
 };

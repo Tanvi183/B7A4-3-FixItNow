@@ -140,6 +140,23 @@ const updateBookingStatusInDB = async (
     );
   }
 
+  // State machine validation
+  const validTransitions: Record<string, string[]> = {
+    REQUESTED: ["ACCEPTED", "DECLINED"],
+    ACCEPTED: ["PAID"], // Payment gateway handles this transition
+    PAID: ["IN_PROGRESS"],
+    IN_PROGRESS: ["COMPLETED"],
+    DECLINED: [],
+    COMPLETED: [],
+  };
+
+  if (!validTransitions[booking.status].includes(status)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Cannot change status from ${booking.status} to ${status}`
+    );
+  }
+
   const updatedBooking = await prisma.booking.update({
     where: { id: bookingId },
     data: { status },

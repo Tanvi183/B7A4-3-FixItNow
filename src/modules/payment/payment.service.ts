@@ -80,6 +80,61 @@ const createPaymentIntentInDB = async (userId: string, bookingId: string) => {
   };
 };
 
+const getPaymentHistoryFromDB = async (userId: string) => {
+  const payments = await prisma.payment.findMany({
+    where: {
+      booking: {
+        customerId: userId,
+      },
+    },
+    include: {
+      booking: {
+        include: {
+          service: {
+            select: {
+              name: true,
+              basePrice: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      paidAt: "desc",
+    },
+  });
+
+  return payments;
+};
+
+const getPaymentDetailsFromDB = async (userId: string, id: string) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id },
+    include: {
+      booking: {
+        include: {
+          service: true,
+        },
+      },
+    },
+  });
+
+  if (!payment) {
+    throw new AppError(httpStatus.NOT_FOUND, "Payment not found");
+  }
+
+  if (payment.booking.customerId !== userId) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to view this payment"
+    );
+  }
+
+  return payment;
+};
+
 export const paymentService = {
   createPaymentIntentInDB,
+  getPaymentHistoryFromDB,
+  getPaymentDetailsFromDB,
 };
