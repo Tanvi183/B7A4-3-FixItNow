@@ -16,4 +16,7 @@ router.post(
 router.get("/", auth(), paymentController.getPaymentHistory);
 router.get("/:id", auth(), paymentController.getPaymentDetails);
 
+// Webhook doesn't require standard JWT auth, Stripe uses signatures
+router.post("/confirm", paymentController.confirmWebhook);
+
 export const paymentRoutes = router;

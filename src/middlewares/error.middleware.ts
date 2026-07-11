@@ -17,7 +17,7 @@ export const globalErrorHandler = (
   if (err instanceof ZodError) {
     statusCode = httpStatus.BAD_REQUEST;
     message = "Validation Error";
-    const errorMessages = err.issues.map((issue) => {
+    const errorDetails = err.issues.map((issue) => {
       return {
         path: issue.path[issue.path.length - 1] || "",
         message: issue.message,
@@ -25,10 +25,8 @@ export const globalErrorHandler = (
     });
     return res.status(statusCode).json({
       success: false,
-      statusCode,
       message,
-      errorMessages,
-      error: err,
+      errorDetails,
     });
   }
 
@@ -66,8 +64,7 @@ export const globalErrorHandler = (
   // Return standard JSON response format
   res.status(statusCode).json({
     success: false,
-    statusCode,
     message,
-    error: err.stack || err.message || err,
+    errorDetails: err,
   });
 };
