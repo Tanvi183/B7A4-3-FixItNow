@@ -10,9 +10,4 @@ yarn-debug.log*
 yarn-error.log*
 
 # Ignore reference planning and guide files
-regulations.md
-implementation_plan.md
-development_plan.md
-commit_plan.md
-api_docs_guide.md
 .vercel
