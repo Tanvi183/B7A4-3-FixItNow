@@ -1,4 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
+import httpStatus from "http-status";
+import { AppError } from "../../errors/AppError.js";
 
 const getTechniciansFromDB = async () => {
   const result = await prisma.technicianProfile.findMany({
@@ -73,8 +75,83 @@ const updateProfileInDB = async (userId: string, payload: any) => {
   return result;
 };
 
+const getTechnicianBookingsFromDB = async (userId: string) => {
+  const technicianProfile = await prisma.technicianProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!technicianProfile) {
+    throw new AppError(httpStatus.NOT_FOUND, "Technician profile not found");
+  }
+
+  const bookings = await prisma.booking.findMany({
+    where: {
+      service: {
+        technicianId: technicianProfile.id,
+      },
+    },
+    include: {
+      customer: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+      service: {
+        select: {
+          name: true,
+          basePrice: true,
+        },
+      },
+    },
+  });
+
+  return bookings;
+};
+
+const updateBookingStatusInDB = async (
+  userId: string,
+  bookingId: string,
+  status: any
+) => {
+  const technicianProfile = await prisma.technicianProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!technicianProfile) {
+    throw new AppError(httpStatus.NOT_FOUND, "Technician profile not found");
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      service: true,
+    },
+  });
+
+  if (!booking) {
+    throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+  }
+
+  if (booking.service.technicianId !== technicianProfile.id) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to update this booking"
+    );
+  }
+
+  const updatedBooking = await prisma.booking.update({
+    where: { id: bookingId },
+    data: { status },
+  });
+
+  return updatedBooking;
+};
+
 export const technicianService = {
   getTechniciansFromDB,
   getTechnicianByIdFromDB,
   updateProfileInDB,
+  getTechnicianBookingsFromDB,
+  updateBookingStatusInDB,
 };

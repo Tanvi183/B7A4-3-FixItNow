@@ -10,3 +10,16 @@ export const updateTechnicianProfileSchema = z.object({
     location: z.string().optional(),
   }),
 });
+
+export const updateBookingStatusSchema = z.object({
+  body: z.object({
+    status: z.enum([
+      "REQUESTED",
+      "ACCEPTED",
+      "DECLINED",
+      "PAID",
+      "IN_PROGRESS",
+      "COMPLETED",
+    ]),
+  }),
+});
