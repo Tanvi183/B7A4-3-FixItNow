@@ -31,8 +31,13 @@ const getPaymentHistory = catchAsync(async (req: Request, res: Response) => {
 
 const getPaymentDetails = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
+<<<<<<< HEAD
   const { id } = req.params;
   const result = await paymentService.getPaymentDetailsFromDB(userId, id as string);
+=======
+  const { id } = req.params as { id: string };
+  const result = await paymentService.getPaymentDetailsFromDB(userId, id);
+>>>>>>> f836aa7e323eee5cbf03e859dbbb8668ef3b6984
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
@@ -41,8 +46,18 @@ const getPaymentDetails = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const confirmWebhook = catchAsync(async (req: Request, res: Response) => {
+  const signature = req.headers["stripe-signature"] as string;
+  // Stripe webhooks require raw body, but assuming express.json handles it or we parse it
+  const result = await paymentService.confirmPaymentWebhookInDB(req.body, signature);
+  
+  // Stripe requires a 200 response to acknowledge receipt
+  res.status(200).json(result);
+});
+
 export const paymentController = {
   createPaymentIntent,
   getPaymentHistory,
   getPaymentDetails,
+  confirmWebhook,
 };

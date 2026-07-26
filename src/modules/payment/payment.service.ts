@@ -133,8 +133,45 @@ const getPaymentDetailsFromDB = async (userId: string, id: string) => {
   return payment;
 };
 
+const confirmPaymentWebhookInDB = async (payload: any, signature: string) => {
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      config.stripe_webhook_secret as string
+    );
+  } catch (err: any) {
+    throw new AppError(httpStatus.BAD_REQUEST, `Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === "payment_intent.succeeded") {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    
+    // Update payment record
+    const payment = await prisma.payment.updateMany({
+      where: { transactionId: paymentIntent.id },
+      data: {
+        status: "SUCCESS",
+        paidAt: new Date(),
+      },
+    });
+
+    if (payment.count > 0 && paymentIntent.metadata.bookingId) {
+      // Update booking status
+      await prisma.booking.update({
+        where: { id: paymentIntent.metadata.bookingId },
+        data: { status: "PAID" },
+      });
+    }
+  }
+
+  return { received: true };
+};
+
 export const paymentService = {
   createPaymentIntentInDB,
   getPaymentHistoryFromDB,
   getPaymentDetailsFromDB,
+  confirmPaymentWebhookInDB,
 };
