@@ -32,7 +32,7 @@ const getPaymentHistory = catchAsync(async (req: Request, res: Response) => {
 const getPaymentDetails = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
   const { id } = req.params;
-  const result = await paymentService.getPaymentDetailsFromDB(userId, id);
+  const result = await paymentService.getPaymentDetailsFromDB(userId, id as string);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
