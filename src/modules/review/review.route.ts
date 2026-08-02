@@ -13,6 +13,7 @@ router.post(
   reviewController.createReview
 );
 
+router.get("/public", reviewController.getPublicReviews);
 router.get("/", auth(), reviewController.getAllReviews);
 
 export const reviewRoutes = router;

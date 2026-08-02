@@ -21,11 +21,29 @@ const getTechniciansFromDB = async () => {
               name: true,
             },
           },
+          _count: {
+            select: {
+              bookings: {
+                where: {
+                  review: {
+                    isNot: null,
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
   });
-  return result;
+  
+  return result.map(tech => {
+    const reviewCount = tech.services.reduce((total, service) => total + (service._count?.bookings || 0), 0);
+    return {
+      ...tech,
+      reviewCount
+    };
+  });
 };
 
 const getTechnicianByIdFromDB = async (id: string) => {
@@ -150,11 +168,7 @@ const updateBookingStatusInDB = async (
     COMPLETED: [],
   };
 
-<<<<<<< HEAD
   if (!validTransitions[booking.status]?.includes(status)) {
-=======
-  if (!(validTransitions[booking.status] || []).includes(status)) {
->>>>>>> f836aa7e323eee5cbf03e859dbbb8668ef3b6984
     throw new AppError(
       httpStatus.BAD_REQUEST,
       `Cannot change status from ${booking.status} to ${status}`

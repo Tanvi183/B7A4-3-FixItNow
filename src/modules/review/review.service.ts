@@ -81,7 +81,24 @@ const getReviewsFromDB = async (user: any) => {
   return result;
 };
 
+export const getPublicReviewsFromDB = async () => {
+  const result = await prisma.review.findMany({
+    include: {
+      customer: { select: { name: true, email: true } },
+      booking: { 
+        include: { 
+          service: { select: { name: true } }
+        }
+      }
+    },
+    orderBy: { rating: "desc" },
+    take: 10,
+  });
+  return result;
+};
+
 export const reviewService = {
   createReviewInDB,
   getReviewsFromDB,
+  getPublicReviewsFromDB,
 };
