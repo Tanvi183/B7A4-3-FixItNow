@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { reviewController } from "./review.controller.js";
-import { requireCustomer } from "../../middlewares/auth.middleware.js";
+import { requireCustomer, auth } from "../../middlewares/auth.middleware.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 import { createReviewSchema } from "./review.validation.js";
 
@@ -12,5 +12,7 @@ router.post(
   validateRequest(createReviewSchema),
   reviewController.createReview
 );
+
+router.get("/", auth(), reviewController.getAllReviews);
 
 export const reviewRoutes = router;

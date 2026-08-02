@@ -54,7 +54,16 @@ const getBookingsFromDB = async (user: any) => {
   const result = await prisma.booking.findMany({
     where,
     include: {
-      service: { select: { name: true } },
+      service: { 
+        select: { 
+          name: true,
+          technician: {
+            include: {
+              user: { select: { name: true } }
+            }
+          }
+        } 
+      },
       customer: { select: { name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
