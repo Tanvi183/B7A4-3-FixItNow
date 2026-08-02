@@ -15,4 +15,10 @@ router.patch(
   adminController.updateUserStatus
 );
 
+router.patch(
+  "/technicians/:id/approve",
+  requireAdmin,
+  adminController.approveTechnician
+);
+
 export const adminRoutes = router;

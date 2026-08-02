@@ -15,6 +15,18 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const applyToBeTechnician = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const result = await userService.updateUserRoleToTechnician(userId, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Successfully applied as technician!",
+    data: result,
+  });
+});
+
 export const userController = {
   getMyProfile,
+  applyToBeTechnician,
 };

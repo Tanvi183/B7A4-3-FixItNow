@@ -42,15 +42,16 @@ const registerUser = async (payload: any) => {
         name,
         email,
         password: hashedPassword,
-        role,
+        role: "CUSTOMER", // Start as CUSTOMER until admin approval
         status: "ACTIVE",
         technicianProfile: {
           create: {
             bio: bio || "",
             skills: skills || [],
-            experienceYears: Number(experienceYears),
-            pricingRate: Number(pricingRate),
-            availabilitySlots: availabilitySlots || []
+            experienceYears: Number(experienceYears) || 0,
+            pricingRate: Number(pricingRate) || 0,
+            availabilitySlots: availabilitySlots || [],
+            isApproved: false // Explicitly marked as unapproved
           }
         }
       },

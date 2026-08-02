@@ -9,6 +9,7 @@ model TechnicianProfile {
   availabilitySlots Json     // e.g. ["Monday 10:00 - 12:00", "Wednesday 14:00 - 16:00"]
   location          String?
   averageRating     Decimal  @default(0)
+  isApproved        Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   services          Service[]

@@ -26,7 +26,19 @@ const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const approveTechnician = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params as { id: string };
+  const result = await adminService.approveTechnician(id);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Technician approved successfully!",
+    data: result,
+  });
+});
+
 export const adminController = {
   getAllUsers,
   updateUserStatus,
+  approveTechnician,
 };
