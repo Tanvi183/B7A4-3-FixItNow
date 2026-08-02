@@ -17,7 +17,7 @@ import { notFound } from "./middlewares/notFound.js";
 const app: Application = express();
 
 app.use(cors({
-  origin: ["http://localhost:3000", "https://b7-a4-3-fix-it-now-frontend-901u5c8ml.vercel.app"],
+  origin: ["http://localhost:3000", "https://b7-a4-3-fix-it-now-frontend-opal.vercel.app"],
   credentials: true,
 }));
 
