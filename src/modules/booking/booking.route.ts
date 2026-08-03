@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { bookingController } from "./booking.controller.js";
-import { requireCustomer, auth } from "../../middlewares/auth.middleware.js";
+import { requireCustomer, requireAdmin, requireTechnician, auth } from "../../middlewares/auth.middleware.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 import { createBookingSchema } from "./booking.validation.js";
 
 const router = Router();
 
-// Protected endpoint: Only CUSTOMER role can request a booking
+// Create booking
 router.post(
   "/",
   requireCustomer,
@@ -14,8 +14,15 @@ router.post(
   bookingController.createBooking
 );
 
-// Protected endpoints: Any authenticated user can list/view their relevant bookings
+// Get bookings
 router.get("/", auth(), bookingController.getBookings);
 router.get("/:id", auth(), bookingController.getBookingById);
+
+// State transitions
+router.patch("/:id/admin-review", requireAdmin, bookingController.adminReviewBooking);
+router.patch("/:id/technician-response", requireTechnician, bookingController.technicianResponseBooking);
+router.patch("/:id/start", requireTechnician, bookingController.startBooking);
+router.patch("/:id/complete", requireTechnician, bookingController.completeBooking);
+router.patch("/:id/customer-confirm", requireCustomer, bookingController.customerConfirmBooking);
 
 export const bookingRoutes = router;

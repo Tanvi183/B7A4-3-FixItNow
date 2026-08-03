@@ -145,24 +145,66 @@ const confirmPaymentWebhookInDB = async (payload: any, signature: string) => {
     throw new AppError(httpStatus.BAD_REQUEST, `Webhook Error: ${err.message}`);
   }
 
-  if (event.type === "payment_intent.succeeded") {
-    const paymentIntent = event.data.object as Stripe.PaymentIntent;
-    
-    // Update payment record
-    const payment = await prisma.payment.updateMany({
-      where: { transactionId: paymentIntent.id },
-      data: {
-        status: "SUCCESS",
-        paidAt: new Date(),
-      },
-    });
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const bookingId = session.metadata?.bookingId;
 
-    if (payment.count > 0 && paymentIntent.metadata.bookingId) {
-      // Update booking status
-      await prisma.booking.update({
-        where: { id: paymentIntent.metadata.bookingId },
-        data: { status: "PAID" },
-      });
+    if (bookingId) {
+      // 1. Update Payment status
+      const payment = await prisma.payment.findUnique({ where: { bookingId } });
+      if (payment) {
+        await prisma.payment.update({
+          where: { bookingId },
+          data: { status: "SUCCESS", paidAt: new Date(), transactionId: session.id },
+        });
+
+        // 2. Update Booking Status
+        const booking = await prisma.booking.update({
+          where: { id: bookingId },
+          data: { status: "paid" },
+          include: { service: true }
+        });
+        
+        // 3. Create StatusHistory
+        await prisma.statusHistory.create({
+          data: {
+            bookingId: booking.id,
+            oldStatus: "payment_pending",
+            newStatus: "paid",
+            changedById: "system",
+            changedByRole: "system",
+            note: "Payment succeeded via Stripe webhook"
+          }
+        });
+
+        // 4. Calculate Commission Split (80% tech, 20% platform)
+        if (booking.technicianId) {
+          const totalAmount = Number(payment.amount);
+          const commissionRate = 0.20; // 20% global rate
+          const platformAmount = totalAmount * commissionRate;
+          const technicianAmount = totalAmount - platformAmount;
+
+          await prisma.commissionSplit.create({
+            data: {
+              paymentId: payment.id,
+              technicianId: booking.technicianId,
+              totalAmount,
+              commissionRate,
+              platformAmount,
+              technicianAmount
+            }
+          });
+
+          // Credit Technician Wallet/Payouts
+          await prisma.technicianPayout.create({
+            data: {
+              technicianId: booking.technicianId,
+              amount: technicianAmount,
+              status: "CREDITED"
+            }
+          });
+        }
+      }
     }
   }
 

@@ -1,17 +1,28 @@
 model Booking {
-  id           String        @id @default(uuid())
-  customerId   String
-  customer     User          @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
-  serviceId    String
-  service      Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  bookingDate  DateTime
-  timeSlot     String
-  status       BookingStatus @default(REQUESTED)
-  totalAmount  Decimal
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  payment      Payment?
-  review       Review?
+  id                    String        @id @default(uuid())
+  customerId            String
+  customer              User          @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId             String
+  service               Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  technicianId          String?
+  technician            User?         @relation("TechnicianBookings", fields: [technicianId], references: [id], onDelete: SetNull)
+  bookingDate           DateTime
+  timeSlot              String
+  status                BookingStatus @default(requested)
+  totalAmount           Decimal
+  adminNote             String?       @db.Text
+  technicianNote        String?       @db.Text
+  customerFeedback      String?       @db.Text
+  requestedAt           DateTime      @default(now())
+  assignedAt            DateTime?
+  technicianRespondedAt DateTime?
+  workCompletedAt       DateTime?
+  customerConfirmedAt   DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  payment               Payment?
+  review                Review?
+  statusHistory         StatusHistory[]
 
   @@map("bookings")
 }

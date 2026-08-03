@@ -209,7 +209,7 @@ async function main() {
     });
 
     if (technician && technician.technicianProfile && technician.technicianProfile.services.length > 0) {
-      const service = technician.technicianProfile.services[0];
+      const service = technician.technicianProfile.services[0]!;
 
       // 6c. Create a completed booking
       const booking = await prisma.booking.upsert({

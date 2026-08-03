@@ -37,8 +37,46 @@ const getBookingById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const adminReviewBooking = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { action, technicianId } = req.body;
+  const result = await bookingService.adminReviewBooking(id, req.user.id as string, action, technicianId);
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Booking reviewed.", data: result });
+});
+
+const technicianResponseBooking = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { action } = req.body;
+  const result = await bookingService.technicianResponseBooking(id, req.user.id as string, action);
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Responded to booking.", data: result });
+});
+
+const startBooking = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const result = await bookingService.startBooking(id, req.user.id as string);
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Job started.", data: result });
+});
+
+const completeBooking = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const result = await bookingService.completeBooking(id, req.user.id as string);
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Job completed.", data: result });
+});
+
+const customerConfirmBooking = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { action } = req.body;
+  const result = await bookingService.customerConfirmBooking(id, req.user.id as string, action);
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Customer confirmation recorded.", data: result });
+});
+
 export const bookingController = {
   createBooking,
   getBookings,
   getBookingById,
+  adminReviewBooking,
+  technicianResponseBooking,
+  startBooking,
+  completeBooking,
+  customerConfirmBooking
 };

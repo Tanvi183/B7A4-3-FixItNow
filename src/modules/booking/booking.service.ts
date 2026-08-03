@@ -2,9 +2,31 @@ import httpStatus from "http-status";
 import { AppError } from "../../errors/AppError.js";
 import { prisma } from "../../lib/prisma.js";
 import { ICreateBookingRequest } from "./booking.interface.js";
+import { BookingStatus, Role } from "@prisma/client";
+
+// Helper for status history
+const createStatusHistory = async (
+  bookingId: string,
+  oldStatus: BookingStatus,
+  newStatus: BookingStatus,
+  userId: string,
+  role: Role,
+  note?: string
+) => {
+  if (oldStatus === newStatus) return;
+  await prisma.statusHistory.create({
+    data: {
+      bookingId,
+      oldStatus,
+      newStatus,
+      changedById: userId,
+      changedByRole: role.toLowerCase(),
+      note,
+    },
+  });
+};
 
 const createBookingInDB = async (customerId: string, payload: ICreateBookingRequest) => {
-  // 1. Check if the service exists
   const service = await prisma.service.findUnique({
     where: { id: payload.serviceId },
   });
@@ -13,7 +35,6 @@ const createBookingInDB = async (customerId: string, payload: ICreateBookingRequ
     throw new AppError(httpStatus.NOT_FOUND, "Service not found.");
   }
 
-  // 2. Create the booking with the service's base price as totalAmount
   const result = await prisma.booking.create({
     data: {
       customerId,
@@ -21,14 +42,11 @@ const createBookingInDB = async (customerId: string, payload: ICreateBookingRequ
       bookingDate: new Date(payload.bookingDate),
       timeSlot: payload.timeSlot,
       totalAmount: service.basePrice,
+      status: "requested",
     },
     include: {
-      service: {
-        select: { name: true },
-      },
-      customer: {
-        select: { name: true, email: true },
-      },
+      service: { select: { name: true } },
+      customer: { select: { name: true, email: true } },
     },
   });
 
@@ -41,68 +59,175 @@ const getBookingsFromDB = async (user: any) => {
   if (user.role === "CUSTOMER") {
     where = { customerId: user.id };
   } else if (user.role === "TECHNICIAN") {
-    where = {
-      service: {
-        technician: {
-          userId: user.id,
-        },
-      },
-    };
+    where = { technicianId: user.id };
   }
   // Admin sees all
 
   const result = await prisma.booking.findMany({
     where,
     include: {
-      service: { 
-        select: { 
-          name: true,
-          technician: {
-            include: {
-              user: { select: { name: true } }
-            }
-          }
-        } 
-      },
+      service: { select: { name: true, basePrice: true } },
       customer: { select: { name: true, email: true } },
+      technician: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  return result;
+  // Transform for frontend which expects customer.user.name and technician.user.name
+  return result.map((r: any) => ({
+    ...r,
+    customer: { user: r.customer },
+    technician: r.technician ? { user: r.technician } : null
+  }));
 };
 
 const getBookingByIdFromDB = async (id: string, user: any) => {
   const result = await prisma.booking.findUniqueOrThrow({
     where: { id },
     include: {
-      service: {
-        include: {
-          technician: true,
-        },
-      },
-      customer: {
-        select: { name: true, email: true },
-      },
+      service: true,
+      customer: { select: { name: true, email: true } },
+      technician: { select: { name: true, email: true } },
       payment: true,
       review: true,
+      statusHistory: { orderBy: { createdAt: 'desc' } }
     },
   });
 
-  // Role-based access control
   if (user.role === "CUSTOMER" && result.customerId !== user.id) {
     throw new AppError(httpStatus.FORBIDDEN, "You do not have permission to view this booking.");
   }
 
-  if (user.role === "TECHNICIAN" && result.service.technician.userId !== user.id) {
+  if (user.role === "TECHNICIAN" && result.technicianId !== user.id) {
     throw new AppError(httpStatus.FORBIDDEN, "You do not have permission to view this booking.");
   }
 
   return result;
 };
 
+// State Transitions
+
+const adminReviewBooking = async (id: string, adminId: string, action: "approve" | "reject", technicianId?: string) => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+
+  if (!["requested", "technician_declined", "customer_disputed", "REQUESTED"].includes(booking.status)) {
+    throw new AppError(httpStatus.BAD_REQUEST, `Cannot review booking in ${booking.status} state.`);
+  }
+
+  let newStatus: BookingStatus = booking.status;
+  
+  if (action === "reject") {
+    newStatus = "admin_rejected";
+    await prisma.booking.update({
+      where: { id },
+      data: { status: newStatus },
+    });
+  } else if (action === "approve") {
+    if (!technicianId) throw new AppError(httpStatus.BAD_REQUEST, "technicianId is required for approval.");
+    newStatus = "assigned";
+    await prisma.booking.update({
+      where: { id },
+      data: { status: newStatus, technicianId, assignedAt: new Date() },
+    });
+  } else if (action === "resolve" && booking.status === "customer_disputed") {
+    // Admin mediates and sets back to in_progress to be redone
+    newStatus = "in_progress";
+    await prisma.booking.update({
+      where: { id },
+      data: { status: newStatus },
+    });
+  }
+
+  await createStatusHistory(id, booking.status, newStatus, adminId, Role.ADMIN);
+  return { status: newStatus };
+};
+
+const technicianResponseBooking = async (id: string, techId: string, action: "accept" | "decline") => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+
+  if (booking.technicianId !== techId) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are not assigned to this booking.");
+  }
+  if (!["assigned", "REQUESTED"].includes(booking.status)) {
+    throw new AppError(httpStatus.BAD_REQUEST, `Cannot respond to booking in ${booking.status} state.`);
+  }
+
+  const newStatus: BookingStatus = action === "accept" ? "technician_accepted" : "technician_declined";
+  
+  await prisma.booking.update({
+    where: { id },
+    data: { 
+      status: newStatus,
+      technicianRespondedAt: new Date(),
+      ...(action === "decline" ? { technicianId: null } : {}) // unassign if declined so admin can reassign
+    },
+  });
+
+  await createStatusHistory(id, booking.status, newStatus, techId, Role.TECHNICIAN);
+  return { status: newStatus };
+};
+
+const startBooking = async (id: string, techId: string) => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+  
+  if (booking.technicianId !== techId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
+  if (!["technician_accepted", "ACCEPTED"].includes(booking.status)) {
+    throw new AppError(httpStatus.BAD_REQUEST, `Cannot start booking in ${booking.status} state.`);
+  }
+
+  const newStatus: BookingStatus = "in_progress";
+  await prisma.booking.update({
+    where: { id },
+    data: { status: newStatus },
+  });
+
+  await createStatusHistory(id, booking.status, newStatus, techId, Role.TECHNICIAN);
+  return { status: newStatus };
+};
+
+const completeBooking = async (id: string, techId: string) => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+  
+  if (booking.technicianId !== techId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
+  if (!["in_progress", "IN_PROGRESS"].includes(booking.status)) {
+    throw new AppError(httpStatus.BAD_REQUEST, `Cannot complete booking in ${booking.status} state.`);
+  }
+
+  const newStatus: BookingStatus = "work_completed";
+  await prisma.booking.update({
+    where: { id },
+    data: { status: newStatus, workCompletedAt: new Date() },
+  });
+
+  await createStatusHistory(id, booking.status, newStatus, techId, Role.TECHNICIAN);
+  return { status: newStatus };
+};
+
+const customerConfirmBooking = async (id: string, customerId: string, action: "approve" | "dispute") => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+  
+  if (booking.customerId !== customerId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
+  if (booking.status !== "work_completed") {
+    throw new AppError(httpStatus.BAD_REQUEST, `Cannot confirm booking in ${booking.status} state.`);
+  }
+
+  const newStatus: BookingStatus = action === "approve" ? "payment_pending" : "customer_disputed";
+  await prisma.booking.update({
+    where: { id },
+    data: { status: newStatus, customerConfirmedAt: new Date() },
+  });
+
+  await createStatusHistory(id, booking.status, newStatus, customerId, Role.CUSTOMER);
+  return { status: newStatus };
+};
+
 export const bookingService = {
   createBookingInDB,
   getBookingsFromDB,
   getBookingByIdFromDB,
+  adminReviewBooking,
+  technicianResponseBooking,
+  startBooking,
+  completeBooking,
+  customerConfirmBooking
 };

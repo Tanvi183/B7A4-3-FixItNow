@@ -7,7 +7,8 @@ model Payment {
   method        String          // e.g. "card"
   provider      PaymentProvider @default(STRIPE)
   status        PaymentStatus   @default(PENDING)
-  paidAt        DateTime        @default(now())
+  paidAt          DateTime        @default(now())
+  commissionSplit CommissionSplit?
 
   @@map("payments")
 }

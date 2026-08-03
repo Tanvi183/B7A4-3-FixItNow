@@ -10,12 +10,26 @@ enum UserStatus {
 }
 
 enum BookingStatus {
+  // Legacy states
   REQUESTED
   ACCEPTED
   DECLINED
   PAID
   IN_PROGRESS
   COMPLETED
+  
+  // New 11-step states
+  requested
+  admin_rejected
+  assigned
+  technician_declined
+  technician_accepted
+  in_progress
+  work_completed
+  customer_disputed
+  payment_pending
+  paid
+  completed
 }
 
 enum PaymentStatus {

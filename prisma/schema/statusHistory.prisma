@@ -1,0 +1,14 @@
+model StatusHistory {
+  id            String        @id @default(uuid())
+  bookingId     String
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  oldStatus     BookingStatus
+  newStatus     BookingStatus
+  changedById   String
+  changedBy     User          @relation("StatusChanger", fields: [changedById], references: [id])
+  changedByRole String        // "customer", "technician", "admin", "system"
+  note          String?       @db.Text
+  createdAt     DateTime      @default(now())
+
+  @@map("status_history")
+}
