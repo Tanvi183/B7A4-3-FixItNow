@@ -106,6 +106,26 @@ async function main() {
       categoryId: createdCategories["Cleaning"],
       serviceName: "Deep Home Cleaning",
       serviceDesc: "Professional steam cleaning for living room and bedroom carpets."
+    },
+    {
+      name: "Alex Martinez",
+      email: "alex.painter@example.com",
+      bio: "Expert Painter",
+      skills: ["Interior", "Exterior"],
+      pricingRate: 45,
+      categoryId: createdCategories["Painting"],
+      serviceName: "Premium Interior Painting",
+      serviceDesc: "High-quality residential interior and exterior painting services."
+    },
+    {
+      name: "James Taylor",
+      email: "james.carpenter@example.com",
+      bio: "Master Carpenter",
+      skills: ["Woodwork", "Custom Furniture"],
+      pricingRate: 60,
+      categoryId: createdCategories["Carpentry"],
+      serviceName: "Custom Woodwork & Repairs",
+      serviceDesc: "Professional carpentry, furniture repair, and custom builds."
     }
   ];
 
