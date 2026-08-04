@@ -266,5 +266,6 @@ export const bookingService = {
   technicianResponseBooking,
   startBooking,
   completeBooking,
-  customerConfirmBooking
+  customerConfirmBooking,
+  customerCancelBooking
 };
