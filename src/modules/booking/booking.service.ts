@@ -253,7 +253,7 @@ const customerConfirmBooking = async (id: string, customerId: string, action: "a
   return { status: newStatus };
 };
 
-const customerCancelBooking = async (id: string, customerId: string) => {
+const customerCancelBooking = async (id: string, customerId: string, offerAmount?: number) => {
   const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
   
   if (booking.customerId !== customerId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
@@ -266,16 +266,60 @@ const customerCancelBooking = async (id: string, customerId: string) => {
     });
     await createStatusHistory(id, booking.status, "cancelled", customerId, Role.CUSTOMER);
     return { status: "cancelled" };
-  } else if (["assigned", "technician_accepted", "in_progress", "technician_declined"].includes(booking.status)) {
-    // Apply for cancellation
+  } else if (["cancellation_approved"].includes(booking.status)) {
+    // Technician approved the cancellation fee offer, so we can finally cancel it
+    // Set totalAmount to the agreed cancellation fee
     await prisma.booking.update({
       where: { id },
-      data: { status: "cancellation_requested" },
+      data: { 
+        status: "cancelled", 
+        totalAmount: booking.cancellationOffer ?? booking.totalAmount
+      },
     });
-    await createStatusHistory(id, booking.status, "cancellation_requested", customerId, Role.CUSTOMER);
+    await createStatusHistory(id, booking.status, "cancelled", customerId, Role.CUSTOMER, `Finalized cancellation with fee: $${booking.cancellationOffer}`);
+    return { status: "cancelled" };
+  } else if (["assigned", "technician_accepted", "in_progress", "technician_declined"].includes(booking.status)) {
+    // Apply for cancellation and offer a fee
+    await prisma.booking.update({
+      where: { id },
+      data: { 
+        status: "cancellation_requested",
+        cancellationOffer: offerAmount ? Number(offerAmount) : null
+      },
+    });
+    await createStatusHistory(id, booking.status, "cancellation_requested", customerId, Role.CUSTOMER, offerAmount ? `Offered cancellation fee: $${offerAmount}` : "Requested cancellation without fee");
     return { status: "cancellation_requested" };
   } else {
     throw new AppError(httpStatus.BAD_REQUEST, `Cannot cancel booking in ${booking.status} state.`);
+  }
+};
+
+const technicianCancellationResponse = async (id: string, technicianId: string, action: "accept" | "reject") => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+  
+  if (booking.technicianId !== technicianId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
+  if (booking.status !== "cancellation_requested") {
+    throw new AppError(httpStatus.BAD_REQUEST, `No cancellation request to respond to.`);
+  }
+
+  if (action === "accept") {
+    await prisma.booking.update({
+      where: { id },
+      data: { status: "cancellation_approved" },
+    });
+    await createStatusHistory(id, booking.status, "cancellation_approved", technicianId, Role.TECHNICIAN, "Accepted cancellation fee offer");
+    return { status: "cancellation_approved" };
+  } else {
+    // Rejecting means going back to technician_accepted (so they can resume work)
+    await prisma.booking.update({
+      where: { id },
+      data: { 
+        status: "technician_accepted",
+        cancellationOffer: null // clear the offer
+      },
+    });
+    await createStatusHistory(id, booking.status, "technician_accepted", technicianId, Role.TECHNICIAN, "Rejected cancellation request");
+    return { status: "technician_accepted" };
   }
 };
 
@@ -308,5 +352,6 @@ export const bookingService = {
   completeBooking,
   customerConfirmBooking,
   customerCancelBooking,
+  technicianCancellationResponse,
   deleteBookingFromDB,
 };

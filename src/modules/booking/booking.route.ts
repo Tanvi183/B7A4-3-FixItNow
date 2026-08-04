@@ -23,6 +23,7 @@ router.patch("/:id/admin-review", requireAdmin, bookingController.adminReviewBoo
 router.patch("/:id/technician-response", requireTechnician, bookingController.technicianResponseBooking);
 router.patch("/:id/start", requireTechnician, bookingController.startBooking);
 router.patch("/:id/complete", requireTechnician, bookingController.completeBooking);
+router.patch("/:id/cancellation-response", requireTechnician, bookingController.technicianCancellationResponse);
 router.patch("/:id/customer-confirm", requireCustomer, bookingController.customerConfirmBooking);
 router.patch("/:id/customer-cancel", requireCustomer, bookingController.customerCancelBooking);
 router.delete("/:id", requireCustomer, bookingController.deleteBooking);

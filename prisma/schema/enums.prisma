@@ -28,6 +28,7 @@ enum BookingStatus {
   paid
   completed
   cancellation_requested
+  cancellation_approved
   cancelled
 }
 
