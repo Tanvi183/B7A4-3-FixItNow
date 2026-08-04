@@ -27,6 +27,18 @@ const createStatusHistory = async (
 };
 
 const createBookingInDB = async (customerId: string, payload: ICreateBookingRequest) => {
+  // Check if customer has any unpaid cancellation fees
+  const pendingCancellations = await prisma.booking.findFirst({
+    where: {
+      customerId,
+      status: "cancellation_approved",
+    }
+  });
+  
+  if (pendingCancellations) {
+    throw new AppError(httpStatus.FORBIDDEN, "You have unpaid cancellation fees. Please pay them before booking a new service.");
+  }
+
   const service = await prisma.service.findUnique({
     where: { id: payload.serviceId },
   });
@@ -348,6 +360,27 @@ const deleteBookingFromDB = async (id: string, customerId: string) => {
   return null;
 };
 
+const customerPayBooking = async (id: string, customerId: string) => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+  
+  if (booking.customerId !== customerId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
+  
+  if (["cancellation_approved", "payment_pending"].includes(booking.status)) {
+    // If it was a cancellation, it's now paid and effectively cancelled
+    // If it was a regular service completion, it's paid and effectively closed
+    const newStatus = booking.status === "cancellation_approved" ? "cancelled" : "paid";
+    
+    await prisma.booking.update({
+      where: { id },
+      data: { status: newStatus as any },
+    });
+    await createStatusHistory(id, booking.status, newStatus as any, customerId, Role.CUSTOMER, "Customer completed payment");
+    return { status: newStatus };
+  } else {
+    throw new AppError(httpStatus.BAD_REQUEST, `Booking cannot be paid in ${booking.status} state.`);
+  }
+};
+
 export const bookingService = {
   createBookingInDB,
   getBookingsFromDB,
@@ -360,4 +393,5 @@ export const bookingService = {
   customerCancelBooking,
   technicianCancellationResponse,
   deleteBookingFromDB,
+  customerPayBooking,
 };

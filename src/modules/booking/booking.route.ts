@@ -26,6 +26,7 @@ router.patch("/:id/complete", requireTechnician, bookingController.completeBooki
 router.patch("/:id/cancellation-response", requireTechnician, bookingController.technicianCancellationResponse);
 router.patch("/:id/customer-confirm", requireCustomer, bookingController.customerConfirmBooking);
 router.patch("/:id/customer-cancel", requireCustomer, bookingController.customerCancelBooking);
+router.patch("/:id/pay", requireCustomer, bookingController.customerPayBooking);
 router.delete("/:id", requireCustomer, bookingController.deleteBooking);
 
 export const bookingRoutes = router;

@@ -91,6 +91,12 @@ const deleteBooking = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Booking deleted successfully.", data: result });
 });
 
+const customerPayBooking = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const result = await bookingService.customerPayBooking(id, req.user.id as string);
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Booking paid successfully.", data: result });
+});
+
 export const bookingController = {
   createBooking,
   getBookings,
@@ -103,4 +109,5 @@ export const bookingController = {
   customerCancelBooking,
   technicianCancellationResponse,
   deleteBooking,
+  customerPayBooking,
 };
