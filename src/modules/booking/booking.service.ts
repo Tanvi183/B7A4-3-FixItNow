@@ -55,10 +55,12 @@ const createBookingInDB = async (customerId: string, payload: ICreateBookingRequ
 
 const getBookingsFromDB = async (user: any) => {
   let where: any = {};
-  
-  if (user.role === "CUSTOMER") {
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+  const role = dbUser ? dbUser.role : user.role;
+
+  if (role === "CUSTOMER") {
     where = { customerId: user.id };
-  } else if (user.role === "TECHNICIAN") {
+  } else if (role === "TECHNICIAN") {
     where = { technicianId: user.id };
   }
   // Admin sees all
