@@ -1,18 +1,18 @@
 model TechnicianProfile {
-  id                String   @id @default(uuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(uuid())
+  userId            String    @unique
   bio               String?
   skills            String[]
   experienceYears   Int
   pricingRate       Decimal
-  availabilitySlots Json     // e.g. ["Monday 10:00 - 12:00", "Wednesday 14:00 - 16:00"]
+  availabilitySlots Json
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  averageRating     Decimal   @default(0)
   location          String?
-  averageRating     Decimal  @default(0)
-  isApproved        Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  isApproved        Boolean   @default(false)
   services          Service[]
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("technician_profiles")
 }

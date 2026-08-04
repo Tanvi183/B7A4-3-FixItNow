@@ -1,25 +1,25 @@
 model Booking {
-  id                    String        @id @default(uuid())
+  id                    String          @id @default(uuid())
   customerId            String
-  customer              User          @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
   serviceId             String
-  service               Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  technicianId          String?
-  technician            User?         @relation("TechnicianBookings", fields: [technicianId], references: [id], onDelete: SetNull)
   bookingDate           DateTime
   timeSlot              String
-  status                BookingStatus @default(requested)
+  status                BookingStatus   @default(requested)
   totalAmount           Decimal
-  adminNote             String?       @db.Text
-  technicianNote        String?       @db.Text
-  customerFeedback      String?       @db.Text
-  requestedAt           DateTime      @default(now())
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  adminNote             String?
   assignedAt            DateTime?
+  customerConfirmedAt   DateTime?
+  customerFeedback      String?
+  requestedAt           DateTime        @default(now())
+  technicianId          String?
+  technicianNote        String?
   technicianRespondedAt DateTime?
   workCompletedAt       DateTime?
-  customerConfirmedAt   DateTime?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  customer              User            @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+  service               Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  technician            User?           @relation("TechnicianBookings", fields: [technicianId], references: [id])
   payment               Payment?
   review                Review?
   statusHistory         StatusHistory[]

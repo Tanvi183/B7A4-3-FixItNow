@@ -7,12 +7,12 @@ model User {
   status            UserStatus         @default(ACTIVE)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  technicianProfile TechnicianProfile?
   bookings          Booking[]          @relation("CustomerBookings")
   technicianJobs    Booking[]          @relation("TechnicianBookings")
   reviews           Review[]           @relation("CustomerReviews")
   statusChanges     StatusHistory[]    @relation("StatusChanger")
   payouts           TechnicianPayout[]
+  technicianProfile TechnicianProfile?
 
   @@map("users")
 }

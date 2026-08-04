@@ -4,12 +4,12 @@ model Service {
   description  String
   basePrice    Decimal
   categoryId   String
-  category     Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   technicianId String
-  technician   TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   bookings     Booking[]
+  category     Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  technician   TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
 
   @@map("services")
 }
