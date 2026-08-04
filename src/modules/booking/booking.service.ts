@@ -255,7 +255,7 @@ const customerConfirmBooking = async (id: string, customerId: string, action: "a
   return { status: newStatus };
 };
 
-const customerCancelBooking = async (id: string, customerId: string, offerAmount?: number) => {
+const customerCancelBooking = async (id: string, customerId: string, offerAmount?: number, cancellationReason?: string) => {
   const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
   
   if (booking.customerId !== customerId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
@@ -286,7 +286,8 @@ const customerCancelBooking = async (id: string, customerId: string, offerAmount
       where: { id },
       data: { 
         status: "cancellation_requested",
-        cancellationOffer: offerAmount ? Number(offerAmount) : null
+        cancellationOffer: offerAmount ? Number(offerAmount) : null,
+        cancellationReason: cancellationReason || null
       },
     });
     await createStatusHistory(id, booking.status, "cancellation_requested", customerId, Role.CUSTOMER, offerAmount ? `Offered cancellation fee: $${offerAmount}` : "Requested cancellation without fee");

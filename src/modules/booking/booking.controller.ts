@@ -73,7 +73,8 @@ const customerConfirmBooking = catchAsync(async (req: Request, res: Response) =>
 const customerCancelBooking = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const offerAmount = req.body.offerAmount;
-  const result = await bookingService.customerCancelBooking(id, req.user.id as string, offerAmount);
+  const cancellationReason = req.body.cancellationReason;
+  const result = await bookingService.customerCancelBooking(id, req.user.id as string, offerAmount, cancellationReason);
   sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Booking cancelled successfully.", data: result });
 });
 
