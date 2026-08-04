@@ -107,7 +107,7 @@ const getBookingByIdFromDB = async (id: string, user: any) => {
 
 // State Transitions
 
-const adminReviewBooking = async (id: string, adminId: string, action: "approve" | "reject" | "resolve" | "approve_cancellation" | "reassign", technicianId?: string) => {
+const adminReviewBooking = async (id: string, adminId: string, action: "approve" | "reject" | "resolve" | "approve_cancellation" | "reject_cancellation" | "reassign", technicianId?: string) => {
   const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
 
   let newStatus: BookingStatus = booking.status;
@@ -117,6 +117,16 @@ const adminReviewBooking = async (id: string, adminId: string, action: "approve"
       throw new AppError(httpStatus.BAD_REQUEST, `Cannot approve cancellation for booking in ${booking.status} state.`);
     }
     newStatus = "cancelled";
+    await prisma.booking.update({
+      where: { id },
+      data: { status: newStatus },
+    });
+  } else if (action === "reject_cancellation") {
+    if (booking.status !== "cancellation_requested") {
+      throw new AppError(httpStatus.BAD_REQUEST, `Cannot reject cancellation for booking in ${booking.status} state.`);
+    }
+    // Revert to assigned (approved mode) so work can continue
+    newStatus = "assigned";
     await prisma.booking.update({
       where: { id },
       data: { status: newStatus },
@@ -269,6 +279,25 @@ const customerCancelBooking = async (id: string, customerId: string) => {
   }
 };
 
+const deleteBookingFromDB = async (id: string, customerId: string) => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+  
+  if (booking.customerId !== customerId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
+  
+  if (!["cancelled", "CANCELLED", "admin_rejected", "DECLINED", "customer_disputed"].includes(booking.status)) {
+    throw new AppError(httpStatus.BAD_REQUEST, `Cannot delete booking in ${booking.status} state. Only cancelled bookings can be removed.`);
+  }
+
+  // Delete associated status history first due to foreign key constraints
+  await prisma.statusHistory.deleteMany({ where: { bookingId: id } });
+  
+  await prisma.booking.delete({
+    where: { id },
+  });
+  
+  return null;
+};
+
 export const bookingService = {
   createBookingInDB,
   getBookingsFromDB,
@@ -278,5 +307,6 @@ export const bookingService = {
   startBooking,
   completeBooking,
   customerConfirmBooking,
-  customerCancelBooking
+  customerCancelBooking,
+  deleteBookingFromDB,
 };

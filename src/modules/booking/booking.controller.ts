@@ -73,7 +73,13 @@ const customerConfirmBooking = catchAsync(async (req: Request, res: Response) =>
 const customerCancelBooking = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const result = await bookingService.customerCancelBooking(id, req.user.id as string);
-  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Booking cancellation recorded.", data: result });
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Cancellation handled.", data: result });
+});
+
+const deleteBooking = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const result = await bookingService.deleteBookingFromDB(id, req.user.id as string);
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Booking deleted successfully.", data: result });
 });
 
 export const bookingController = {
@@ -85,5 +91,6 @@ export const bookingController = {
   startBooking,
   completeBooking,
   customerConfirmBooking,
-  customerCancelBooking
+  customerCancelBooking,
+  deleteBooking,
 };
