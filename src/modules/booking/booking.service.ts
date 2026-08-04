@@ -307,7 +307,10 @@ const technicianCancellationResponse = async (id: string, technicianId: string, 
   if (action === "accept") {
     await prisma.booking.update({
       where: { id },
-      data: { status: "cancellation_approved" },
+      data: { 
+        status: "cancellation_approved",
+        totalAmount: booking.cancellationOffer ?? booking.totalAmount 
+      },
     });
     await createStatusHistory(id, booking.status, "cancellation_approved", technicianId, Role.TECHNICIAN, "Accepted cancellation fee offer");
     return { status: "cancellation_approved" };
