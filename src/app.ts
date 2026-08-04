@@ -11,6 +11,7 @@ import { bookingRoutes } from "./modules/booking/booking.route.js";
 import { paymentRoutes } from "./modules/payment/payment.route.js";
 import { reviewRoutes } from "./modules/review/review.route.js";
 import { adminRoutes } from "./modules/admin/admin.route.js";
+import { locationRoutes } from "./modules/location/location.route.js";
 import { globalErrorHandler } from "./middlewares/error.middleware.js";
 import { notFound } from "./middlewares/notFound.js";
 
@@ -59,6 +60,7 @@ app.get("/test-db", async (req: Request, res: Response) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/locations", locationRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/technicians", technicianRoutes);
