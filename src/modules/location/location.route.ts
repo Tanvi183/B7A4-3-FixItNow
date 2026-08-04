@@ -1,6 +1,6 @@
 import express from "express";
 import { locationController } from "./location.controller.js";
-import auth from "../../middlewares/auth.js";
+import { auth } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

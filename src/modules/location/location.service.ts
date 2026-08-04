@@ -1,4 +1,4 @@
-import { prisma } from "../../utils/prisma.js";
+import { prisma } from "../../lib/prisma.js";
 
 const createLocationInDB = async (payload: { name: string }) => {
   const result = await prisma.location.create({
