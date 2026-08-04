@@ -70,6 +70,12 @@ const customerConfirmBooking = catchAsync(async (req: Request, res: Response) =>
   sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Customer confirmation recorded.", data: result });
 });
 
+const customerCancelBooking = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const result = await bookingService.customerCancelBooking(id, req.user.id as string);
+  sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Booking cancellation recorded.", data: result });
+});
+
 export const bookingController = {
   createBooking,
   getBookings,
@@ -78,5 +84,6 @@ export const bookingController = {
   technicianResponseBooking,
   startBooking,
   completeBooking,
-  customerConfirmBooking
+  customerConfirmBooking,
+  customerCancelBooking
 };

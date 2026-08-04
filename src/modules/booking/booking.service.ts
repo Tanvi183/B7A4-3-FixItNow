@@ -107,35 +107,46 @@ const getBookingByIdFromDB = async (id: string, user: any) => {
 
 // State Transitions
 
-const adminReviewBooking = async (id: string, adminId: string, action: "approve" | "reject", technicianId?: string) => {
+const adminReviewBooking = async (id: string, adminId: string, action: "approve" | "reject" | "resolve" | "approve_cancellation", technicianId?: string) => {
   const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
-
-  if (!["requested", "technician_declined", "customer_disputed", "REQUESTED"].includes(booking.status)) {
-    throw new AppError(httpStatus.BAD_REQUEST, `Cannot review booking in ${booking.status} state.`);
-  }
 
   let newStatus: BookingStatus = booking.status;
   
-  if (action === "reject") {
-    newStatus = "admin_rejected";
+  if (action === "approve_cancellation") {
+    if (booking.status !== "cancellation_requested") {
+      throw new AppError(httpStatus.BAD_REQUEST, `Cannot approve cancellation for booking in ${booking.status} state.`);
+    }
+    newStatus = "cancelled";
     await prisma.booking.update({
       where: { id },
       data: { status: newStatus },
     });
-  } else if (action === "approve") {
-    if (!technicianId) throw new AppError(httpStatus.BAD_REQUEST, "technicianId is required for approval.");
-    newStatus = "assigned";
-    await prisma.booking.update({
-      where: { id },
-      data: { status: newStatus, technicianId, assignedAt: new Date() },
-    });
-  } else if (action === "resolve" && booking.status === "customer_disputed") {
-    // Admin mediates and sets back to in_progress to be redone
-    newStatus = "in_progress";
-    await prisma.booking.update({
-      where: { id },
-      data: { status: newStatus },
-    });
+  } else {
+    if (!["requested", "technician_declined", "customer_disputed", "REQUESTED"].includes(booking.status)) {
+      throw new AppError(httpStatus.BAD_REQUEST, `Cannot review booking in ${booking.status} state.`);
+    }
+
+    if (action === "reject") {
+      newStatus = "admin_rejected";
+      await prisma.booking.update({
+        where: { id },
+        data: { status: newStatus },
+      });
+    } else if (action === "approve") {
+      if (!technicianId) throw new AppError(httpStatus.BAD_REQUEST, "technicianId is required for approval.");
+      newStatus = "assigned";
+      await prisma.booking.update({
+        where: { id },
+        data: { status: newStatus, technicianId, assignedAt: new Date() },
+      });
+    } else if (action === "resolve" && booking.status === "customer_disputed") {
+      // Admin mediates and sets back to in_progress to be redone
+      newStatus = "in_progress";
+      await prisma.booking.update({
+        where: { id },
+        data: { status: newStatus },
+      });
+    }
   }
 
   await createStatusHistory(id, booking.status, newStatus, adminId, Role.ADMIN);
@@ -219,6 +230,32 @@ const customerConfirmBooking = async (id: string, customerId: string, action: "a
 
   await createStatusHistory(id, booking.status, newStatus, customerId, Role.CUSTOMER);
   return { status: newStatus };
+};
+
+const customerCancelBooking = async (id: string, customerId: string) => {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
+  
+  if (booking.customerId !== customerId) throw new AppError(httpStatus.FORBIDDEN, "Unauthorized");
+  
+  if (["requested", "REQUESTED"].includes(booking.status)) {
+    // Direct cancel before admin touches it
+    await prisma.booking.update({
+      where: { id },
+      data: { status: "cancelled" },
+    });
+    await createStatusHistory(id, booking.status, "cancelled", customerId, Role.CUSTOMER);
+    return { status: "cancelled" };
+  } else if (["assigned", "technician_accepted", "in_progress", "technician_declined"].includes(booking.status)) {
+    // Apply for cancellation
+    await prisma.booking.update({
+      where: { id },
+      data: { status: "cancellation_requested" },
+    });
+    await createStatusHistory(id, booking.status, "cancellation_requested", customerId, Role.CUSTOMER);
+    return { status: "cancellation_requested" };
+  } else {
+    throw new AppError(httpStatus.BAD_REQUEST, `Cannot cancel booking in ${booking.status} state.`);
+  }
 };
 
 export const bookingService = {

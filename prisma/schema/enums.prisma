@@ -30,6 +30,8 @@ enum BookingStatus {
   payment_pending
   paid
   completed
+  cancellation_requested
+  cancelled
 }
 
 enum PaymentStatus {
