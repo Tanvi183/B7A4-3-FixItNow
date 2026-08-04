@@ -9,7 +9,7 @@ model TechnicianProfile {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   averageRating     Decimal   @default(0)
-  locations         String[]  @default([])
+  location          String?
   isApproved        Boolean   @default(false)
   services          Service[]
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)

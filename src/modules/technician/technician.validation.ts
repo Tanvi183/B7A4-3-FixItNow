@@ -8,7 +8,6 @@ export const updateTechnicianProfileSchema = z.object({
     pricingRate: z.number().positive().optional(),
     availabilitySlots: z.array(z.string()).optional(),
     location: z.string().optional(),
-    locations: z.array(z.string()).optional(),
   }),
 });
 
