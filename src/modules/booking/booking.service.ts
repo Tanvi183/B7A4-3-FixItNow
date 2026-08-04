@@ -107,7 +107,7 @@ const getBookingByIdFromDB = async (id: string, user: any) => {
 
 // State Transitions
 
-const adminReviewBooking = async (id: string, adminId: string, action: "approve" | "reject" | "resolve" | "approve_cancellation", technicianId?: string) => {
+const adminReviewBooking = async (id: string, adminId: string, action: "approve" | "reject" | "resolve" | "approve_cancellation" | "reassign", technicianId?: string) => {
   const booking = await prisma.booking.findUniqueOrThrow({ where: { id } });
 
   let newStatus: BookingStatus = booking.status;
@@ -120,6 +120,17 @@ const adminReviewBooking = async (id: string, adminId: string, action: "approve"
     await prisma.booking.update({
       where: { id },
       data: { status: newStatus },
+    });
+  } else if (action === "reassign") {
+    // Allow reassigning technician at any active state
+    if (!technicianId) throw new AppError(httpStatus.BAD_REQUEST, "technicianId is required for reassignment.");
+    if (!["requested", "assigned", "technician_accepted", "in_progress", "technician_declined"].includes(booking.status)) {
+      throw new AppError(httpStatus.BAD_REQUEST, `Cannot reassign technician to booking in ${booking.status} state.`);
+    }
+    newStatus = "assigned";
+    await prisma.booking.update({
+      where: { id },
+      data: { status: newStatus, technicianId, assignedAt: new Date() },
     });
   } else {
     if (!["requested", "technician_declined", "customer_disputed", "REQUESTED"].includes(booking.status)) {
